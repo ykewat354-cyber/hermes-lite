@@ -1,6 +1,8 @@
 #!/bin/bash
 # ============================================================================
-# Hermes Lite Installer Script (V4 - Final Polish)
+# Hermes Lite Installer Script (V5 - Full Source Edition)
+# ============================================================================
+# Now downloads the actual source code from GitHub to ensure it works!
 # ============================================================================
 
 set -e
@@ -15,7 +17,7 @@ NC='\033[0m'
 echo -e "${BLUE}"
 echo "====================================================================="
 echo "    Hermes Lite Installer - Ultra-lightweight AI Agent"
-echo "    V4 - Final Polish Edition"
+echo "    V5 - Full Source Edition"
 echo "====================================================================="
 echo -e "${NC}"
 
@@ -38,23 +40,42 @@ INSTALL_DIR="$HOME/hermes-lite"
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
-echo -e "\n${BLUE}Step 2: Setting up Hermes Lite directories...${NC}"
+echo -e "\n${BLUE}Step 2: Setting up directories...${NC}"
 mkdir -p "$HOME/.hermes-lite/data"
 mkdir -p "$HOME/.hermes-lite/skills"
 
-# 3. Install Dependencies
-echo -e "\n${BLUE}Step 3: Installing required packages...${NC}"
+# 3. DOWNLOAD SOURCE CODE (The missing piece!)
+echo -e "\n${BLUE}Step 3: Downloading Hermes Lite source code...${NC}"
+REPO_URL="https://github.com/ykewat354-cyber/hermes-lite"
+
+# We clone the repo to get all the .py files
+if [ -d "hermes_lite_repo" ]; then
+    rm -rf "hermes_lite_repo"
+fi
+
+git clone --depth 1 "$REPO_URL" hermes_lite_repo
+if [ -d "hermes_lite_repo/hermes_lite" ]; then
+    cp -r hermes_lite_repo/hermes_lite .
+    echo "✅ Source code downloaded successfully"
+else
+    echo -e "${RED}❌ Failed to find hermes_lite folder in repo!${NC}"
+    exit 1
+fi
+rm -rf "hermes_lite_repo"
+
+# 4. Install Dependencies
+echo -e "\n${BLUE}Step 4: Installing required packages...${NC}"
 if python3 -m pip install requests --break-system-packages 2>/dev/null; then
     echo "✅ Requests installed successfully"
 elif python3 -m pip install requests 2>/dev/null; then
     echo "✅ Requests installed successfully"
 else
-    echo -e "${RED}❌ Failed to install requests. Please try: apt install python3-requests${NC}"
+    echo -e "${RED}❌ Failed to install requests. Try: apt install python3-requests${NC}"
     exit 1
 fi
 
-# 4. Global Configuration (FIXED EOF)
-echo -e "\n${BLUE}Step 4: Creating configuration...${NC}"
+# 5. Configuration
+echo -e "\n${BLUE}Step 5: Creating configuration...${NC}"
 cat <<EOF > "$INSTALL_DIR/config.yaml"
 model: "openai/gpt-4o-mini"
 max_history_tokens: 1000
@@ -67,8 +88,8 @@ site_url: "https://hermes-lite.local"
 site_name: "Hermes Lite"
 EOF
 
-# 5. The Execution Command (FIXED EOF)
-echo -e "\n${BLUE}Step 5: Creating hermes-lite command...${NC}"
+# 6. Create the Execution Command
+echo -e "\n${BLUE}Step 6: Creating hermes-lite command...${NC}"
 cat <<'EOF' > "$INSTALL_DIR/hermes-lite"
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -122,14 +143,14 @@ EOF
 
 chmod +x "$INSTALL_DIR/hermes-lite"
 
-# 6. Path Setup
+# 7. Path Setup
 if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
     echo "export PATH=\"$INSTALL_DIR:\$PATH\"" >> "$HOME/.bashrc"
     echo -e "${YELLOW}Please run: source ~/.bashrc${NC}"
 fi
 
 echo -e "\n${GREEN}====================================================================="
-echo "    Hermes Lite Installation Complete! (V4 - Fixed EOF)"
+echo "    Hermes Lite Installation Complete! (V5 - Full Source Edition)"
 echo "====================================================================="
 echo -e "${NC}"
 echo -e "${GREEN}Final Steps:${NC}"
