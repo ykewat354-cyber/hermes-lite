@@ -1,8 +1,8 @@
 #!/bin/bash
 # ============================================================================
-# Hermes Lite Installer Script (V2 - No Venv Edition)
+# Hermes Lite Installer Script (V3 - Ultimate Fix Edition)
 # ============================================================================
-# Ultra-lightweight AI agent installer for Termux/Ubuntu
+# Designed to work even if pip is missing or system is locked.
 # ============================================================================
 
 set -e
@@ -17,35 +17,50 @@ NC='\033[0m'
 echo -e "${BLUE}"
 echo "====================================================================="
 echo "    Hermes Lite Installer - Ultra-lightweight AI Agent"
-echo "    Direct Installation Mode (No-Venv)"
+echo "    The Ultimate Permanent Fix Edition"
 echo "====================================================================="
 echo -e "${NC}"
 
-# Installation directory
+# 1. Ensure Pip is installed (The core problem fix)
+echo -e "\n${BLUE}Step 1: Verifying Python Pip...${NC}"
+if ! python3 -m pip --version &> /dev/null; then
+    echo -e "${YELLOW}Pip not found. Attempting to install...${NC}"
+    
+    # Try ensurepip first
+    if python3 -m ensurepip --upgrade 2>/dev/null; then
+        echo "✅ Pip installed via ensurepip"
+    else
+        echo -e "${YELLOW}ensurepip failed. Trying get-pip.py...${NC}"
+        curl -sSL https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        python3 get-pip.py --break-system-packages || python3 get-pip.py
+        rm get-pip.py
+        echo "✅ Pip installed via get-pip.py"
+    fi
+fi
+
+# 2. Setup Directories
 INSTALL_DIR="$HOME/hermes-lite"
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
-echo -e "\n${BLUE}Setting up Hermes Lite...${NC}"
-
-# Install dependencies globally
-echo -e "${BLUE}Installing required packages...${NC}"
-# Handle PEP 668 (externally-managed-environment) error for newer Ubuntu/Debian
-if python3 -m pip install requests 2>/dev/null; then
-    echo "✅ Requests installed successfully"
-else
-    echo -e "${YELLOW}Using --break-system-packages flag for system install...${NC}"
-    python3 -m pip install requests --break-system-packages
-fi
-
-# Create data and skills directories
-echo -e "${BLUE}Setting up system directories...${NC}"
+echo -e "\n${BLUE}Step 2: Setting up Hermes Lite directories...${NC}"
 mkdir -p "$HOME/.hermes-lite/data"
 mkdir -p "$HOME/.hermes-lite/skills"
 
-# Create configuration
-echo -e "${BLUE}Creating configuration...${NC}"
-cat > "$INSTALL_DIR/config.yaml" << EOF
+# 3. Install Dependencies
+echo -e "\n${BLUE}Step 3: Installing required packages...${NC}"
+if python3 -m pip install requests --break-system-packages 2>/dev/null; then
+    echo "✅ Requests installed successfully"
+elif python3 -m pip install requests 2>/dev/null; then
+    echo "✅ Requests installed successfully"
+else
+    echo -e "${RED}❌ Failed to install requests. Please try: apt install python3-requests${NC}"
+    exit 1
+fi
+
+# 4. Global Configuration
+echo -e "\n${BLUE}Step 4: Creating configuration...${NC}"
+cat > "$INSTALL_DIR/config.yaml" <<< EOF EOF
 model: "openai/gpt-4o-mini"
 max_history_tokens: 1000
 response_max_tokens: 150
@@ -57,17 +72,16 @@ site_url: "https://hermes-lite.local"
 site_name: "Hermes Lite"
 EOF
 
-# Create the hermes-lite command script
-echo -e "${BLUE}Creating hermes-lite command...${NC}"
-cat > "$INSTALL_DIR/hermes-lite" << 'EOF'
+# 5. The Execution Command
+echo -e "\n${BLUE}Step 5: Creating hermes-lite command...${NC}"
+cat > "$INSTALL_DIR/hermes-lite" <<< ' 'EOF'
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Check if API key is set
 if [ -z "$OPENROUTER_API_KEY" ]; then
-    echo "Error: OPENROUTER_API_KEY environment variable not set"
-    echo "Please get a free API key from: https://openrouter.ai/keys"
-    echo "Then set it with: export OPENROUTER_API_KEY=your_key_here"
+    echo "Error: OPENROUTER_API_KEY not set!"
+    echo "Get a free key from: https://openrouter.ai/keys"
+    echo "Set it with: export OPENROUTER_API_KEY=your_key"
     exit 1
 fi
 
@@ -75,7 +89,11 @@ python3 -c "
 import sys
 import os
 sys.path.insert(0, '$SCRIPT_DIR')
-from hermes_lite.core import HermesLite
+try:
+    from hermes_lite.core import HermesLite
+except ImportError:
+    print('Error: Core files missing. Please re-run install.sh')
+    sys.exit(1)
 
 model = os.getenv('HERMES_LITE_MODEL', 'openai/gpt-4o-mini')
 agent = HermesLite(
@@ -109,19 +127,19 @@ EOF
 
 chmod +x "$INSTALL_DIR/hermes-lite"
 
-# Add to PATH
+# 6. Path Setup
 if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
     echo "export PATH=\"$INSTALL_DIR:\$PATH\"" >> "$HOME/.bashrc"
     echo -e "${YELLOW}Please run: source ~/.bashrc${NC}"
 fi
 
 echo -e "\n${GREEN}====================================================================="
-echo "    Hermes Lite Installation Complete! (V2 - No Venv)"
+echo "    Hermes Lite Installation Complete! (V3 - Permanent Fix)"
 echo "====================================================================="
 echo -e "${NC}"
-echo -e "${GREEN}Next steps:${NC}"
-echo "1. Set your API key: export OPENROUTER_API_KEY='your-key-here'"
-echo "2. Restart terminal: source ~/.bashrc"
-echo "3. Start: hermes-lite"
+echo -e "${GREEN}Final Steps:${NC}"
+echo "1. Set your key: export OPENROUTER_API_KEY='your_key'"
+echo "2. Load path: source ~/.bashrc"
+echo "3. Launch: hermes-lite"
 echo ""
 echo -e "${GREEN}Happy coding, bhai! 🚀${NC}"
