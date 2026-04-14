@@ -1,8 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# Hermes Lite Installer Script (V3 - Ultimate Fix Edition)
-# ============================================================================
-# Designed to work even if pip is missing or system is locked.
+# Hermes Lite Installer Script (V4 - Final Polish)
 # ============================================================================
 
 set -e
@@ -17,20 +15,17 @@ NC='\033[0m'
 echo -e "${BLUE}"
 echo "====================================================================="
 echo "    Hermes Lite Installer - Ultra-lightweight AI Agent"
-echo "    The Ultimate Permanent Fix Edition"
+echo "    V4 - Final Polish Edition"
 echo "====================================================================="
 echo -e "${NC}"
 
-# 1. Ensure Pip is installed (The core problem fix)
+# 1. Ensure Pip is installed
 echo -e "\n${BLUE}Step 1: Verifying Python Pip...${NC}"
 if ! python3 -m pip --version &> /dev/null; then
     echo -e "${YELLOW}Pip not found. Attempting to install...${NC}"
-    
-    # Try ensurepip first
     if python3 -m ensurepip --upgrade 2>/dev/null; then
         echo "✅ Pip installed via ensurepip"
     else
-        echo -e "${YELLOW}ensurepip failed. Trying get-pip.py...${NC}"
         curl -sSL https://bootstrap.pypa.io/get-pip.py -o get-pip.py
         python3 get-pip.py --break-system-packages || python3 get-pip.py
         rm get-pip.py
@@ -58,9 +53,9 @@ else
     exit 1
 fi
 
-# 4. Global Configuration
+# 4. Global Configuration (FIXED EOF)
 echo -e "\n${BLUE}Step 4: Creating configuration...${NC}"
-cat > "$INSTALL_DIR/config.yaml" <<< EOF EOF
+cat <<EOF > "$INSTALL_DIR/config.yaml"
 model: "openai/gpt-4o-mini"
 max_history_tokens: 1000
 response_max_tokens: 150
@@ -72,9 +67,9 @@ site_url: "https://hermes-lite.local"
 site_name: "Hermes Lite"
 EOF
 
-# 5. The Execution Command
+# 5. The Execution Command (FIXED EOF)
 echo -e "\n${BLUE}Step 5: Creating hermes-lite command...${NC}"
-cat > "$INSTALL_DIR/hermes-lite" <<< ' 'EOF'
+cat <<'EOF' > "$INSTALL_DIR/hermes-lite"
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -134,7 +129,7 @@ if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
 fi
 
 echo -e "\n${GREEN}====================================================================="
-echo "    Hermes Lite Installation Complete! (V3 - Permanent Fix)"
+echo "    Hermes Lite Installation Complete! (V4 - Fixed EOF)"
 echo "====================================================================="
 echo -e "${NC}"
 echo -e "${GREEN}Final Steps:${NC}"
