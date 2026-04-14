@@ -1,8 +1,8 @@
 #!/bin/bash
 # ============================================================================
-# Hermes Lite Installer Script (V5 - Full Source Edition)
+# Hermes Lite Installer Script (V6 - Zero Dependency Edition)
 # ============================================================================
-# Now downloads the actual source code from GitHub to ensure it works!
+# No Git needed. Downloads source files directly via GitHub API.
 # ============================================================================
 
 set -e
@@ -17,7 +17,7 @@ NC='\033[0m'
 echo -e "${BLUE}"
 echo "====================================================================="
 echo "    Hermes Lite Installer - Ultra-lightweight AI Agent"
-echo "    V5 - Full Source Edition"
+echo "    V6 - Zero Dependency Edition"
 echo "====================================================================="
 echo -e "${NC}"
 
@@ -44,24 +44,31 @@ echo -e "\n${BLUE}Step 2: Setting up directories...${NC}"
 mkdir -p "$HOME/.hermes-lite/data"
 mkdir -p "$HOME/.hermes-lite/skills"
 
-# 3. DOWNLOAD SOURCE CODE (The missing piece!)
+# 3. Download Source Code via API (Gittless Method)
 echo -e "\n${BLUE}Step 3: Downloading Hermes Lite source code...${NC}"
-REPO_URL="https://github.com/ykewat354-cyber/hermes-lite"
+mkdir -p "hermes_lite"
 
-# We clone the repo to get all the .py files
-if [ -d "hermes_lite_repo" ]; then
-    rm -rf "hermes_lite_repo"
-fi
+# List of files to download from the repo
+FILES=(
+    "hermes_lite/core.py"
+    "hermes_lite/memory.py"
+    "hermes_lite/skills.py"
+    "hermes_lite/telegram_gateway.py"
+)
 
-git clone --depth 1 "$REPO_URL" hermes_lite_repo
-if [ -d "hermes_lite_repo/hermes_lite" ]; then
-    cp -r hermes_lite_repo/hermes_lite .
-    echo "✅ Source code downloaded successfully"
-else
-    echo -e "${RED}❌ Failed to find hermes_lite folder in repo!${NC}"
-    exit 1
-fi
-rm -rf "hermes_lite_repo"
+for FILE in "${FILES[@]}"; do
+    echo -n "Downloading $FILE... "
+    URL="https://raw.githubusercontent.com-ykewat354-cyber/hermes-lite/main/$FILE"
+    # Since raw.githubusercontent is standard, we use it
+    URL="https://raw.githubusercontent.com/ykewat354-cyber/hermes-lite/main/$FILE"
+    curl -sSL "$URL" -o "$FILE"
+    if [ -s "$FILE" ]; then
+        echo "✅"
+    else
+        echo -e "${RED}❌ Failed${NC}"
+        exit 1
+    fi
+done
 
 # 4. Install Dependencies
 echo -e "\n${BLUE}Step 4: Installing required packages...${NC}"
@@ -150,7 +157,7 @@ if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
 fi
 
 echo -e "\n${GREEN}====================================================================="
-echo "    Hermes Lite Installation Complete! (V5 - Full Source Edition)"
+echo "    Hermes Lite Installation Complete! (V6 - Zero Dependency)"
 echo "====================================================================="
 echo -e "${NC}"
 echo -e "${GREEN}Final Steps:${NC}"
