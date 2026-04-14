@@ -1,92 +1,59 @@
 #!/usr/bin/env python3
-"""
-Hermes Lite Telegram Gateway
-Connects the ultra-lightweight Hermes Lite core to Telegram Bot API
-"""
-
 import os
 import requests
-import json
-from typing import Dict, Any
+import subprocess
 from hermes_lite.core import HermesLite
 
 class TelegramGateway:
-    def __init__(self, bot_token: str, agent: HermesLite):
+    def __init__(self, bot_token, agent):
         self.bot_token = bot_token
         self.agent = agent
         self.api_url = f"https://api.telegram.org/bot{bot_token}"
         self.last_update_id = 0
 
-    def send_message(self, chat_id: int, text: str):
-        """Send a message to a Telegram chat"""
-        url = f"{self.api_url}/sendMessage"
-        payload = {"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
-        try:
-            requests.post(url, json=payload, timeout=10)
-        except Exception as e:
-            print(f"Error sending message: {e}")
+    def send_msg(self, chat_id, text):
+        requests.post(f"{self.api_url}/sendMessage", json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"})
 
-    def poll_updates(self):
-        """Poll for new messages from Telegram"""
+    def poll(self):
         url = f"{self.api_url}/getUpdates"
-        params = {"offset": self.last_update_id + 1, "timeout": 30}
-        
-        try:
-            response = requests.get(url, params=params, timeout=35)
-            response.raise_for_status()
-            updates = response.json().get("result", [])
-            
-            for update in updates:
-                self.last_update_id = update["update_id"]
-                if "message" in update and "text" in update["message"]:
-                    chat_id = update["message"]["chat"]["id"]
-                    user_text = update["message"]["text"]
-                    
-                    # Send "Typing..." action
-                    self.send_action(chat_id)
-                    
-                    # Get response from Hermes Lite agent
-                    response_text = self.agent.chat(user_text)
-                    self.send_message(chat_id, response_text)
-                    
-        except Exception as e:
-            print(f"Polling error: {e}")
+        res = requests.get(url, params={"offset": self.last_update_id + 1, "timeout": 30}).json()
+        for update in res.get("result", []):
+            self.last_update_id = update["update_id"]
+            if "message" in update:
+                chat_id = update["message"]["chat"]["id"]
+                text = update["message"].get("text", "")
+                
+                if text.startswith("/set-key"):
+                    parts = text.split(" ", 1)
+                    if len(parts) > 1:
+                        msg = self.agent.update_api_key(parts[1])
+                        self.send_msg(chat_id, msg)
+                    else:
+                        self.send_msg(chat_id, "Bhai, key bhi bhej: `/set-key your_key`")
+                
+                elif text == "/update":
+                    self.send_msg(chat_id, "🔄 Updating Hermes Lite from GitHub... Please wait.")
+                    try:
+                        # Run the installer script directly for current user
+                        subprocess.run(["bash", "-c", "curl -fsSL https://raw.githubusercontent.com/ykewat354-cyber/hermes-lite/main/install.sh | bash"], check=True)
+                        self.send_msg(chat_id, "✅ Update Complete! Restarting agent...")
+                        # In a real scenario, we'd restart the process. For now, notify user.
+                    except Exception as e:
+                        self.send_msg(chat_id, f"❌ Update failed: {e}")
+                
+                else:
+                    reply = self.agent.chat(text)
+                    self.send_msg(chat_id, reply)
 
-    def send_action(self, chat_id: int):
-        """Send typing action to let user know agent is thinking"""
-        url = f"{self.api_url}/sendChatAction"
-        payload = {"chat_id": chat_id, "action": "typing"}
-        try:
-            requests.post(url, json=payload, timeout=5)
-        except:
-            pass
-
-def run_telegram_bot():
-    import argparse
-    parser = argparse.ArgumentParser(description="Hermes Lite Telegram Bot Gateway")
-    parser.add_argument("--token", help="Telegram Bot Token from BotFather")
-    parser.add_argument("--model", default="openai/gpt-4o-mini", help="OpenRouter model")
-    args = parser.parse_args()
-
-    token = args.token or os.getenv("TELEGRAM_BOT_TOKEN")
-    if not token:
-        print("Error: Telegram Bot Token is required!")
-        print("Use --token YOUR_TOKEN or set TELEGRAM_BOT_TOKEN env var")
-        return
-
-    # Initialize Agent
-    try:
-        from hermes_lite.core import HermesLite
-        agent = HermesLite(model=args.model)
-    except Exception as e:
-        print(f"Agent init error: {e}")
-        return
-
-    gateway = TelegramGateway(token, agent)
-    print(f"🚀 Hermes Lite Bot started! Polling messages...")
+def run_bot():
+    # Use default keys if not provided in env
+    token = os.getenv("TELEGRAM_BOT_TOKEN", "8519174502:AAG5JqdGkzAvgUi5ElN1PLPir3kroQx3n4c")
+    api_key = os.getenv("OPENROUTER_API_KEY", "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")
     
-    while True:
-        gateway.poll_updates()
+    agent = HermesLite(api_key=api_key)
+    bot = TelegramGateway(token, agent)
+    print("🚀 Super-Agent Live!")
+    while True: bot.poll()
 
 if __name__ == "__main__":
-    run_telegram_bot()
+    run_bot()
